@@ -1,16 +1,11 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using BreachedEmailsApi.Models;
+using BreachedEmailsApi.Service;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
 namespace BreachedEmailsApi
 {
@@ -28,6 +23,8 @@ namespace BreachedEmailsApi
         {
             services.AddDbContext<BreachedEmailContext>(options => options.UseSqlServer(Configuration.GetConnectionString("BreachedEmailsConnectionString")));
             services.AddControllers();
+            services.AddDistributedMemoryCache();
+            services.AddScoped<IMemoryCache, MemoryCache>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
