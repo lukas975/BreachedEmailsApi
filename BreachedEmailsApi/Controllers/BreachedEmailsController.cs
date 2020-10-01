@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using BreachedEmailsApi.Models;
 using BreachedEmailsApi.Service;
+using System.Security.Cryptography.X509Certificates;
 
 namespace BreachedEmailsApi.Controllers
 {
@@ -21,18 +22,13 @@ namespace BreachedEmailsApi.Controllers
             _memoryCache = memoryCache;
         }
 
-        // GET: api/BreachedEmails
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<BreachedEmail>>> GetBreachedEmails()
-        {
-            return await _context.BreachedEmails.ToListAsync();
-        }
-
         // GET: api/BreachedEmails/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<BreachedEmail>> GetBreachedEmail(string id)
+        public ActionResult<BreachedEmail> GetBreachedEmail(string id)
         {
-            var breachedEmail = await _context.BreachedEmails.FindAsync(id);
+            var cachedEmails = GetCachedEmails();
+
+            var breachedEmail = cachedEmails.SingleOrDefault(x => x.Email == id); //await _context.BreachedEmails.FindAsync(id);
 
             if (breachedEmail == null)
             {
@@ -40,38 +36,6 @@ namespace BreachedEmailsApi.Controllers
             }
 
             return breachedEmail;
-        }
-
-        // PUT: api/BreachedEmails/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to, for
-        // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutBreachedEmail(string id, BreachedEmail breachedEmail)
-        {
-            if (id != breachedEmail.Email)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(breachedEmail).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!BreachedEmailExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
         }
 
         // POST: api/BreachedEmails
@@ -84,6 +48,7 @@ namespace BreachedEmailsApi.Controllers
             try
             {
                 await _context.SaveChangesAsync();
+                UpdateCachedEmails();
             }
             catch (DbUpdateException)
             {
@@ -104,7 +69,10 @@ namespace BreachedEmailsApi.Controllers
         [HttpDelete("{id}")]
         public async Task<ActionResult<BreachedEmail>> DeleteBreachedEmail(string id)
         {
-            var breachedEmail = await _context.BreachedEmails.FindAsync(id);
+            var cachedEmails = GetCachedEmails();
+
+            var breachedEmail = cachedEmails.SingleOrDefault(x => x.Email == id); //await _context.BreachedEmails.FindAsync(id);
+
             if (breachedEmail == null)
             {
                 return NotFound();
@@ -113,12 +81,35 @@ namespace BreachedEmailsApi.Controllers
             _context.BreachedEmails.Remove(breachedEmail);
             await _context.SaveChangesAsync();
 
+            UpdateCachedEmails();
+
             return breachedEmail;
         }
 
         private bool BreachedEmailExists(string id)
         {
             return _context.BreachedEmails.Any(e => e.Email == id);
+        }
+
+        private List<BreachedEmail> GetCachedEmails()
+        {
+            List<BreachedEmail> mcBreachedEmails = _memoryCache.GetCache<List<BreachedEmail>>("breachedemails");
+
+            if (mcBreachedEmails == null)
+            {
+                List<BreachedEmail> breachedEmails = _context.BreachedEmails.ToList();
+                _memoryCache.SetCache<List<BreachedEmail>>(breachedEmails, "breachedemails");
+
+                return breachedEmails;
+            }
+
+            return mcBreachedEmails;
+        }
+
+        private void UpdateCachedEmails()
+        {
+            List<BreachedEmail> breachedEmails = _context.BreachedEmails.ToList();
+            _memoryCache.SetCache<List<BreachedEmail>>(breachedEmails, "breachedemails");
         }
     }
 }
