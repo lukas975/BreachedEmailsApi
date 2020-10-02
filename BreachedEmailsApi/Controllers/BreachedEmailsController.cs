@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using BreachedEmailsApi.Models;
 using BreachedEmailsApi.Service;
-using System.Security.Cryptography.X509Certificates;
 
 namespace BreachedEmailsApi.Controllers
 {
